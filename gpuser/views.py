@@ -1,1 +1,2 @@
-# Create your views here.
+def gpu_status(request):
+    pass

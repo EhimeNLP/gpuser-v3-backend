@@ -3,7 +3,7 @@ from pathlib import Path
 import paramiko
 
 
-def get_gpu_status(server_ip, username, password):
+def get_gpu_status(server_ip, username, password) -> str:
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:

@@ -29,7 +29,7 @@ else:
     app.config.from_pyfile(os.path.join("config", "production.py"), silent=True)
 
 
-def get_gpu_status(server_ip, username, password) -> str:
+def get_gpu_status(server_ip, username, password) -> tuple[str, bool]:
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
@@ -52,18 +52,12 @@ def get_gpu_status(server_ip, username, password) -> str:
             raise Exception(f"Script error: {error}")
         output = stdout.read().decode()
 
-    except paramiko.AuthenticationException:
-        return "Authentication failed, please verify your credentials"
-    except paramiko.SSHException as sshException:
-        return f"Unable to establish SSH connection: {sshException}"
-    except FileNotFoundError as e:
-        return str(e)
     except Exception as e:
-        return f"An error occurred: {e}"
+        return str(e), False
     finally:
         ssh.close()
 
-    return output
+    return output, True
 
 
 @app.route("/")
@@ -75,10 +69,12 @@ def gpu_status():
 
     data = []
     for server_ip in server_ips:
-        status = get_gpu_status(server_ip, username, password)
+        status, success = get_gpu_status(server_ip, username, password)
 
         # Convert CSV to dictionary
         reader = csv.DictReader(status.splitlines())
-        data.append({"server_ip": server_ip, "status": list(reader)})
+        data.append(
+            {"server_ip": server_ip, "status": list(reader), "success": success}
+        )
 
     return jsonify(data)

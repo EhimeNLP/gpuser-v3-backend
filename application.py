@@ -1,5 +1,7 @@
+import concurrent.futures
 import csv
 import os
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import paramiko
@@ -29,7 +31,7 @@ else:
     app.config.from_pyfile(os.path.join("config", "production.py"), silent=True)
 
 
-def get_gpu_status(server_ip, username, password) -> tuple[str, bool]:
+def get_gpu_status(server_ip, username, password) -> tuple[str, str, bool]:
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
@@ -53,11 +55,11 @@ def get_gpu_status(server_ip, username, password) -> tuple[str, bool]:
         output = stdout.read().decode()
 
     except Exception as e:
-        return str(e), False
+        return server_ip, str(e), False
     finally:
         ssh.close()
 
-    return output, True
+    return server_ip, output, True
 
 
 @app.route("/")
@@ -68,13 +70,27 @@ def gpu_status():
     password = config("GPUSER_PASSWORD")
 
     data = []
-    for server_ip in server_ips:
-        status, success = get_gpu_status(server_ip, username, password)
+    futures = {}
+    with ThreadPoolExecutor() as executor:
+        for server_ip in server_ips:
+            futures[server_ip] = executor.submit(
+                get_gpu_status, server_ip, username, password
+            )
+
+    results = {}
+    for future in concurrent.futures.as_completed(futures.values()):
+        server_ip, status, success = future.result()
 
         # Convert CSV to dictionary
         reader = csv.DictReader(status.splitlines())
-        data.append(
-            {"server_ip": server_ip, "status": list(reader), "success": success}
-        )
+        results[server_ip] = {
+            "server_ip": server_ip,
+            "status": list(reader),
+            "success": success,
+        }
+
+    # Sort by server_ip
+    for server_ip in server_ips:
+        data.append(results[server_ip])
 
     return jsonify(data)

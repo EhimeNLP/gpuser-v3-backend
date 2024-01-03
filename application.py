@@ -2,7 +2,9 @@ import concurrent.futures
 import csv
 import os
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
 from pathlib import Path
+from typing import cast
 
 import paramiko
 from decouple import config
@@ -31,7 +33,11 @@ else:
     app.config.from_pyfile(os.path.join("config", "production.py"), silent=True)
 
 
-def get_gpu_status(server_ip, username, password) -> tuple[str, str, bool]:
+def get_gpu_status(
+    server_ip: str,
+    username: str,
+    password: str,
+) -> tuple[str, str, bool]:
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
@@ -62,32 +68,42 @@ def get_gpu_status(server_ip, username, password) -> tuple[str, str, bool]:
     return server_ip, output, True
 
 
+@dataclass
+class GPUStatus:
+    server_ip: str
+    status: list[dict[str, str]]
+    success: bool
+
+
 @app.route("/")
 @cache.cached(timeout=10)
 def gpu_status():
-    server_ips = config("SERVER_IPS").split(",")
-    username = config("GPUSER_NAME")
-    password = config("GPUSER_PASSWORD")
+    server_ips = cast(str, config("SERVER_IPS")).split(",")
+    username = cast(str, config("GPUSER_NAME"))
+    password = cast(str, config("GPUSER_PASSWORD"))
 
     data = []
-    futures = {}
+    futures: dict[str, concurrent.futures.Future[tuple[str, str, bool]]] = {}
     with ThreadPoolExecutor() as executor:
         for server_ip in server_ips:
             futures[server_ip] = executor.submit(
-                get_gpu_status, server_ip, username, password
+                get_gpu_status,
+                server_ip,
+                username,
+                password,
             )
 
-    results = {}
+    results: dict[str, GPUStatus] = {}
     for future in concurrent.futures.as_completed(futures.values()):
         server_ip, status, success = future.result()
 
         # Convert CSV to dictionary
         reader = csv.DictReader(status.splitlines())
-        results[server_ip] = {
-            "server_ip": server_ip,
-            "status": list(reader),
-            "success": success,
-        }
+        results[server_ip] = GPUStatus(
+            server_ip=server_ip,
+            status=list(reader) if success else [],
+            success=success,
+        )
 
     # Sort by server_ip
     for server_ip in server_ips:

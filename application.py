@@ -27,10 +27,10 @@ cache = Cache(
 cache.init_app(app)
 
 # 非公開設定ファイル読み込み
-if app.config["ENV"] == "development":
+if app.config["DEBUG"]:
     app.config.from_pyfile(os.path.join("config", "development.py"))
 else:
-    app.config.from_pyfile(os.path.join("config", "production.py"), silent=True)
+    app.config.from_pyfile(os.path.join("config", "production.py"))
 
 
 def get_gpu_status(

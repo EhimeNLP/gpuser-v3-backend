@@ -1,6 +1,32 @@
+import csv
+import os
 from pathlib import Path
 
 import paramiko
+from decouple import config
+from flask import Flask, jsonify
+from flask_caching import Cache
+
+app = Flask(__name__, instance_relative_config=True)
+
+# 標準設定ファイル読み込み
+app.config.from_object("settings.DefaultConfig")
+
+# キャッシュ設定
+cache = Cache(
+    config={
+        "CACHE_TYPE": "SimpleCache",
+        "DEBUG": True,
+        "CACHE_DEFAULT_TIMEOUT": 10,
+    }
+)
+cache.init_app(app)
+
+# 非公開設定ファイル読み込み
+if app.config["ENV"] == "development":
+    app.config.from_pyfile(os.path.join("config", "development.py"))
+else:
+    app.config.from_pyfile(os.path.join("config", "production.py"), silent=True)
 
 
 def get_gpu_status(server_ip, username, password) -> str:
@@ -38,3 +64,21 @@ def get_gpu_status(server_ip, username, password) -> str:
         ssh.close()
 
     return output
+
+
+@app.route("/")
+@cache.cached(timeout=10)
+def gpu_status():
+    server_ips = config("SERVER_IPS").split(",")
+    username = config("GPUSER_NAME")
+    password = config("GPUSER_PASSWORD")
+
+    data = []
+    for server_ip in server_ips:
+        status = get_gpu_status(server_ip, username, password)
+
+        # Convert CSV to dictionary
+        reader = csv.DictReader(status.splitlines())
+        data.append({"server_ip": server_ip, "status": list(reader)})
+
+    return jsonify(data)

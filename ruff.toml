@@ -13,7 +13,6 @@ select = [
   "B", # flake8-bugbear
   "PL", # Pylint
   "UP", # pyupgrade
-  "DJ", # flake8-django
 ]
 
 [format]

@@ -20,11 +20,13 @@ repos:
     hooks:
       - id: pyupgrade
         args:
-          - --py3-plus
+          - --py311-plus
           - --keep-runtime-typing
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     rev: v0.1.11
     hooks:
       - id: ruff
+        types_or: [python]
         args: [--fix]
       - id: ruff-format
+        types_or: [python]

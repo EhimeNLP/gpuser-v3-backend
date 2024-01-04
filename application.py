@@ -28,9 +28,9 @@ cache.init_app(app)
 
 # 非公開設定ファイル読み込み
 if app.config["DEBUG"]:
-    app.config.from_pyfile(os.path.join("config", "development.py"))
+    app.config.from_pyfile(filename=os.path.join("config", "development.py"))
 else:
-    app.config.from_pyfile(os.path.join("config", "production.py"))
+    app.config.from_pyfile(filename=os.path.join("config", "production.py"))
 
 
 def get_gpu_status(
@@ -39,10 +39,10 @@ def get_gpu_status(
     password: str,
 ) -> tuple[str, str, bool]:
     ssh = paramiko.SSHClient()
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.set_missing_host_key_policy(policy=paramiko.AutoAddPolicy())
     try:
         ssh.connect(
-            server_ip,
+            hostname=server_ip,
             username=username,
             password=password,
             allow_agent=False,
@@ -78,7 +78,7 @@ class GPUStatus:
 @app.route("/")
 @cache.cached(timeout=10)
 def gpu_status():
-    server_ips = cast(str, config("SERVER_IPS")).split(",")
+    server_ips = cast(str, config("SERVER_IPS")).split(sep=",")
     username = cast(str, config("GPUSER_NAME"))
     password = cast(str, config("GPUSER_PASSWORD"))
 

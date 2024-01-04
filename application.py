@@ -82,7 +82,7 @@ def gpu_status():
     username = cast(str, config("GPUSER_NAME"))
     password = cast(str, config("GPUSER_PASSWORD"))
 
-    data = []
+    data: list[GPUStatus] = []
     futures: dict[str, concurrent.futures.Future[tuple[str, str, bool]]] = {}
     with ThreadPoolExecutor() as executor:
         for server_ip in server_ips:

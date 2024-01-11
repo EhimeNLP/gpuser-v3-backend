@@ -13,7 +13,7 @@ from flask_caching import Cache
 from flask_cors import CORS
 
 app = Flask(__name__, instance_relative_config=True)
-cors = CORS(app, resources={r"/*": {"origins": "http://127.0.0.1:3000"}})
+cors = CORS(app, resources={r"/*": {"origins": "http://localhost:*"}})
 
 # 標準設定ファイル読み込み
 app.config.from_object("settings.DefaultConfig")

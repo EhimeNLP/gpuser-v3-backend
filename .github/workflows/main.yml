@@ -2,7 +2,7 @@ name: main
 
 on:
   pull_request:
-    types: [ opened, synchronize ]
+    types: [opened, synchronize]
 
 jobs:
   main:
@@ -15,4 +15,3 @@ jobs:
         uses: actions/checkout@v4
       - name: EditorConfig-Action
         uses: zbeekman/EditorConfig-Action@v1.1.1
-            

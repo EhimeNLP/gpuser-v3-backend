@@ -647,13 +647,13 @@ testing-integration = ["build[virtualenv] (>=1.0.3)", "filelock (>=3.4.0)", "jar
 
 [[package]]
 name = "types-paramiko"
-version = "3.4.0.20240106"
+version = "3.4.0.20240120"
 description = "Typing stubs for paramiko"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "types-paramiko-3.4.0.20240106.tar.gz", hash = "sha256:bc71aa64b75e1e230f51b43c358091e0e76c6f29fd91666d180b4486f7e4de63"},
-    {file = "types_paramiko-3.4.0.20240106-py3-none-any.whl", hash = "sha256:209d1bbf7858dfbb2c1b704db8b5630ee914fb45659d843464e3dc7c95d427a2"},
+    {file = "types-paramiko-3.4.0.20240120.tar.gz", hash = "sha256:07e5992e995c2266a0803a332a69d912036be7664ca36a1ca01dac1b67643132"},
+    {file = "types_paramiko-3.4.0.20240120-py3-none-any.whl", hash = "sha256:b0b44764c6c61a3e7629ee5923dc78b1a22b1d029522df321997697501e30d97"},
 ]
 
 [package.dependencies]
@@ -699,4 +699,4 @@ watchdog = ["watchdog (>=2.3)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "0c25589aa3b8e74b9edc600647fb383591fa5f54248b7923c17138e813a21b54"
+content-hash = "f6dbb0549299d5db96187e8d607d08625946cf041ed8104574539f21999dee4f"

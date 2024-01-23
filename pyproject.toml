@@ -16,7 +16,7 @@ flask-cors = "^4.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.6.0"
-ruff = "^0.1.13"
+ruff = "^0.1.14"
 types-paramiko = "^3.4.0.20240120"
 
 [build-system]

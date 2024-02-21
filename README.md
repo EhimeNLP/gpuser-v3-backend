@@ -29,3 +29,10 @@ cp .env.example .env
 - instance/config/production.py # 本番環境の設定ファイル
 
 instanceフォルダは、.gitignoreに登録されているため、リポジトリには含まれません。
+
+## Author
+
+- 大塚 琢生（ohtsuka@ai.cs.ehime-u.ac.jp）
+- 山内洋輝
+- 樽本空宙
+- 宮田莉奈

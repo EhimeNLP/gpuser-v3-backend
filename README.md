@@ -1,6 +1,6 @@
 # GPUser
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
-## 概要
 二宮研のGPUサーバーの利用状況を確認するためのWebアプリケーションです。
 このリポジトリでは、バックエンドのAPIサーバーを提供します。
 

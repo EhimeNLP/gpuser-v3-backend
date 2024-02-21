@@ -30,4 +30,3 @@ line-ending = "auto"
 
 [lint.per-file-ignores]
 "__init__.py" = ["F401"]
-"config/settings.py" = ["E501"]

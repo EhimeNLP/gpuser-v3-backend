@@ -39,6 +39,12 @@ cp .env.example .env
 
 instanceフォルダは、.gitignoreに登録されているため、リポジトリには含まれません。
 
+## 実行
+
+```bash
+poetry run flask run --debug --port 5000
+```
+
 ## Author
 
 - 大塚 琢生（<ohtsuka@ai.cs.ehime-u.ac.jp>）

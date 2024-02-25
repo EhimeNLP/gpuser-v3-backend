@@ -97,14 +97,14 @@ class GPUStatus:
 @app.route("/")
 @cache.cached(timeout=10)
 def gpu_status():
-    server_ips = cast(str, config("SERVER_IPS")).split(sep=",")
+    hostnames = cast(str, config("HOSTNAMES")).split(sep=",")
     username = cast(str, config("GPUSER_NAME"))
     password = cast(str, config("GPUSER_PASSWORD"))
 
     data: list[GPUStatus] = []
     futures: dict[str, concurrent.futures.Future[tuple[str, str, bool]]] = {}
     with ThreadPoolExecutor() as executor:
-        for server_ip in server_ips:
+        for server_ip in hostnames:
             futures[server_ip] = executor.submit(
                 get_gpu_status,
                 server_ip,
@@ -125,7 +125,7 @@ def gpu_status():
         )
 
     # Sort by server_ip
-    for server_ip in server_ips:
+    for server_ip in hostnames:
         data.append(results[server_ip])
 
     return jsonify(data)

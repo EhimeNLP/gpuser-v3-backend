@@ -33,7 +33,7 @@ app.config.from_object("settings.DefaultConfig")
 cache = Cache(
     config={
         "CACHE_TYPE": "SimpleCache",
-        "DEBUG": True,
+        "DEBUG": app.config["DEBUG"],
         "CACHE_DEFAULT_TIMEOUT": 10,
     }
 )

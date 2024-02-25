@@ -13,8 +13,8 @@ from flask_caching import Cache
 from flask_cors import CORS
 
 app = Flask(__name__, instance_relative_config=True)
-if app.config["DEBUG"]:
-    cors = CORS(
+cors = (
+    CORS(
         app,
         resources={
             r"/*": {
@@ -25,35 +25,37 @@ if app.config["DEBUG"]:
             },
         },
     )
-
-# 標準設定ファイル読み込み
-app.config.from_object("settings.DefaultConfig")
-
-# キャッシュ設定
-cache = Cache(
-    config={
-        "CACHE_TYPE": "SimpleCache",
-        "DEBUG": app.config["DEBUG"],
-        "CACHE_DEFAULT_TIMEOUT": 10,
-    }
+    if app.config["DEBUG"]
+    else None
 )
-cache.init_app(app)
 
-# 非公開設定ファイル読み込み
-if app.config["DEBUG"]:
-    app.config.from_pyfile(
-        filename=os.path.join("config", "development.py"),
-        silent=True,
+
+def load_config(app: Flask) -> None:
+    # load default config
+    app.config.from_object("settings.DefaultConfig")
+    # load instance config
+    config_file = "development.py" if app.config["DEBUG"] else "production.py"
+    app.config.from_pyfile(filename=os.path.join("config", config_file), silent=True)
+
+
+def setup_cache(app: Flask) -> Cache:
+    cache = Cache(
+        config={
+            "CACHE_TYPE": "SimpleCache",
+            "DEBUG": app.config["DEBUG"],
+            "CACHE_DEFAULT_TIMEOUT": 10,
+        }
     )
-else:
-    app.config.from_pyfile(
-        filename=os.path.join("config", "production.py"),
-        silent=True,
-    )
+    cache.init_app(app)
+    return cache
 
 
-def get_gpu_status(
-    server_ip: str,
+load_config(app)
+cache = setup_cache(app)
+
+
+def fetch_gpu_status(
+    hostname: str,
     username: str,
     password: str,
 ) -> tuple[str, str, bool]:
@@ -61,7 +63,7 @@ def get_gpu_status(
     ssh.set_missing_host_key_policy(policy=paramiko.AutoAddPolicy())
     try:
         ssh.connect(
-            hostname=server_ip,
+            hostname=hostname,
             username=username,
             password=password,
             allow_agent=False,
@@ -80,18 +82,37 @@ def get_gpu_status(
         output = stdout.read().decode()
 
     except Exception as e:
-        return server_ip, str(e), False
+        return hostname, str(e), False
     finally:
         ssh.close()
 
-    return server_ip, output, True
+    return hostname, output, True
 
 
 @dataclass
 class GPUStatus:
-    server_ip: str
+    hostname: str
     status: list[dict[str, str]]
     success: bool
+
+
+def fetch_gpu_statuses(hostnames, username, password):
+    futures: dict[str, concurrent.futures.Future[tuple[str, str, bool]]] = {}
+    with ThreadPoolExecutor() as executor:
+        for hostname in hostnames:
+            futures[hostname] = executor.submit(
+                fetch_gpu_status, hostname, username, password
+            )
+
+    results: dict[str, GPUStatus] = {}
+    for future in concurrent.futures.as_completed(futures.values()):
+        hostname, status, success = future.result()
+        reader = csv.DictReader(status.splitlines())
+        results[hostname] = GPUStatus(
+            hostname=hostname, status=list(reader) if success else [], success=success
+        )
+
+    return results
 
 
 @app.route("/")
@@ -101,31 +122,9 @@ def gpu_status():
     username = cast(str, config("GPUSER_NAME"))
     password = cast(str, config("GPUSER_PASSWORD"))
 
-    data: list[GPUStatus] = []
-    futures: dict[str, concurrent.futures.Future[tuple[str, str, bool]]] = {}
-    with ThreadPoolExecutor() as executor:
-        for server_ip in hostnames:
-            futures[server_ip] = executor.submit(
-                get_gpu_status,
-                server_ip,
-                username,
-                password,
-            )
+    results = fetch_gpu_statuses(hostnames, username, password)
 
-    results: dict[str, GPUStatus] = {}
-    for future in concurrent.futures.as_completed(futures.values()):
-        server_ip, status, success = future.result()
-
-        # Convert CSV to dictionary
-        reader = csv.DictReader(status.splitlines())
-        results[server_ip] = GPUStatus(
-            server_ip=server_ip,
-            status=list(reader) if success else [],
-            success=success,
-        )
-
-    # Sort by server_ip
-    for server_ip in hostnames:
-        data.append(results[server_ip])
+    # Sort by hostname
+    data: list[GPUStatus] = [results[hostname] for hostname in hostnames]
 
     return jsonify(data)

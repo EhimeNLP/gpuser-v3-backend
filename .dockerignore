@@ -1,7 +1,6 @@
 **
 !instance/**
 !scripts/**
-!.env
 !application.py
 !requirements.txt
 !settings.py

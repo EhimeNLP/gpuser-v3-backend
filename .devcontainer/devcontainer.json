@@ -1,0 +1,52 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/python
+{
+  "name": "Python 3",
+  // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+  "dockerComposeFile": "compose.yml",
+  "service": "app",
+  // Features to add to the dev container. More info: https://containers.dev/features.
+  // "features": {},
+  // Use 'forwardPorts' to make a list of ports inside the container available locally.
+  // "forwardPorts": [],
+  // Use 'postCreateCommand' to run commands after the container is created.
+  "postCreateCommand": "poetry install --no-root && poetry run pre-commit install",
+  "workspaceFolder": "/workspace",
+  // Configure tool-specific properties,
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "EditorConfig.EditorConfig",
+        "be5invis.toml",
+        "redhat.vscode-yaml",
+        "donjayamanne.githistory",
+        "ms-azuretools.vscode-docker",
+        "github.vscode-github-actions"
+      ],
+      "settings": {
+        "files.insertFinalNewline": true,
+        "editor.codeActionsOnSave": {
+          "source.organizeImports.ruff": "always"
+        },
+        "[python]": {
+          "editor.formatOnSave": true,
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "python.formatting.provider": "none"
+        },
+        "[toml]": {
+          "editor.formatOnSave": true
+        },
+        "[json]": {
+          "editor.formatOnSave": true
+        },
+        "[yaml]": {
+          "editor.formatOnSave": true,
+          "editor.defaultFormatter": "redhat.vscode-yaml"
+        }
+      }
+    }
+  }
+}

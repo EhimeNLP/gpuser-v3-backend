@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - ..:/workspace:cached
+    command: sleep infinity
+    env_file:
+      - ../.env
+    environment:
+      FLASK_APP: application.py
+      DEBUG: true
+      FLASK_ENV: development

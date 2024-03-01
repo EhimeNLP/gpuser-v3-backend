@@ -1,5 +1,6 @@
 import time
-from logging import INFO, FileHandler, Formatter, getLogger
+from logging import INFO, Formatter, getLogger
+from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
 
 import paramiko
@@ -18,8 +19,16 @@ class SSHConnectionManager:
     def setup_logger(self):
         """Set up the logger for the SSHManager class"""
         logger = getLogger("SSHManager")
-        log_file = Path(__file__).resolve().parent / "log" / "ssh_manager.log"
-        file_handler = FileHandler(log_file)
+        log_dir = Path(__file__).resolve().parent / "log"
+        log_dir.mkdir(exist_ok=True)
+        log_file = log_dir / "ssh_manager"
+        file_handler = TimedRotatingFileHandler(
+            log_file,
+            when="midnight",
+            interval=1,
+            backupCount=7,
+            encoding="utf-8",
+        )
         formatter = Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)

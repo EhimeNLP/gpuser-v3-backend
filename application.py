@@ -1,18 +1,38 @@
+import atexit
 import concurrent.futures
 import csv
 import os
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
+from logging import getLogger
 from pathlib import Path
 from typing import cast
 
 import paramiko
+from apscheduler.schedulers.background import BackgroundScheduler
 from decouple import config
 from flask import Flask, jsonify
 from flask_caching import Cache
 from flask_cors import CORS
 
+from ssh_manager import SSHConnectionManager
+
 app = Flask(__name__, instance_relative_config=True)
+ssh_manager = SSHConnectionManager()
+logger = getLogger(__name__)
+
+
+def cleanup_ssh_connections():
+    logger.info("Cleaning up SSH connections")
+    ssh_manager.cleanup()
+
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(func=cleanup_ssh_connections, trigger="interval", seconds=30)
+scheduler.start()
+atexit.register(lambda: scheduler.shutdown())
+
+
 cors = (
     CORS(
         app,
@@ -58,33 +78,17 @@ def fetch_gpu_status(
     hostname: str,
     username: str,
     password: str,
+    ssh_manager: SSHConnectionManager,
 ) -> tuple[str, str, bool]:
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(policy=paramiko.AutoAddPolicy())
     try:
-        ssh.connect(
-            hostname=hostname,
-            username=username,
-            password=password,
-            allow_agent=False,
-            look_for_keys=False,
-        )
+        ssh_manager.connect(hostname, username, password)
 
         script_path = Path(__file__).resolve().parent / "scripts" / "gpu_status.sh"
-        if not script_path.exists():
-            raise FileNotFoundError(f"Script not found at {script_path}")
-
-        script = script_path.read_text()
-        stdin, stdout, stderr = ssh.exec_command(script)
-        error = stderr.read().decode()
-        if error:
-            raise Exception(f"Script error: {error}")
-        output = stdout.read().decode()
-
+        output = ssh_manager.execute_script(hostname=hostname, script_path=script_path)
     except Exception as e:
         return hostname, str(e), False
-    finally:
-        ssh.close()
 
     return hostname, output, True
 
@@ -96,12 +100,21 @@ class GPUStatus:
     success: bool
 
 
-def fetch_gpu_statuses(hostnames, username, password):
+def fetch_gpu_statuses(
+    hostnames,
+    username,
+    password,
+    ssh_manager: SSHConnectionManager,
+):
     futures: dict[str, concurrent.futures.Future[tuple[str, str, bool]]] = {}
     with ThreadPoolExecutor() as executor:
         for hostname in hostnames:
             futures[hostname] = executor.submit(
-                fetch_gpu_status, hostname, username, password
+                fetch_gpu_status,
+                hostname,
+                username,
+                password,
+                ssh_manager,
             )
 
     results: dict[str, GPUStatus] = {}
@@ -116,13 +129,13 @@ def fetch_gpu_statuses(hostnames, username, password):
 
 
 @app.route("/")
-@cache.cached(timeout=10)
+@cache.cached(timeout=3)
 def gpu_status():
     hostnames = cast(str, config("HOSTNAMES")).split(sep=",")
     username = cast(str, config("GPUSER_NAME"))
     password = cast(str, config("GPUSER_PASSWORD"))
 
-    results = fetch_gpu_statuses(hostnames, username, password)
+    results = fetch_gpu_statuses(hostnames, username, password, ssh_manager)
 
     # Sort by hostname
     data: list[GPUStatus] = [results[hostname] for hostname in hostnames]

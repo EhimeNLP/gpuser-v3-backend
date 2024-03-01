@@ -18,7 +18,7 @@ class SSHConnectionManager:
     def setup_logger(self):
         """Set up the logger for the SSHManager class"""
         logger = getLogger("SSHManager")
-        log_file = Path("ssh_manager.log")
+        log_file = Path(__file__).resolve().parent / "log" / "ssh_manager.log"
         file_handler = FileHandler(log_file)
         formatter = Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         file_handler.setFormatter(formatter)

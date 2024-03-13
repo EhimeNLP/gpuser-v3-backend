@@ -23,7 +23,7 @@ repos:
           - --py311-plus
           - --keep-runtime-typing
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.3.1
+    rev: v0.3.2
     hooks:
       - id: ruff
         types_or: [python]
